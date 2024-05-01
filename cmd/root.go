@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -15,10 +17,13 @@ Command examples:
 */
 
 var (
-	logger  *os.File
+	workspaces []string
+
+	workspaces_list_file string
+
 	rootCmd = &cobra.Command{
 		Use:   "workspaces",
-		Short: "Workspaces is a simple CLI workspace manager.",
+		Short: "A simple CLI workspace manager.",
 		Long:  `A simple workspace manager to quickly access and modify your frequent project locations.`,
 	}
 )
@@ -28,28 +33,49 @@ func Execute() error {
 }
 
 func init() {
-	// cobra.OnInitialize() @TODO: do I want a config file? Probably not, for now...
 	home, err := os.UserHomeDir()
 	if err != nil {
-		rootCmd.PrintErrln("Error: Unable to locate home user directory")
+		fmt.Println("Error: Unable to locate home user directory")
 		os.Exit(1)
 	}
-	logger_path := home + "/.local/share/workspaces"
-	workspace_log := logger_path + "workspaces.json"
-	logger, err := os.OpenFile(workspace_log, os.O_RDWR|os.O_APPEND, 0600)
-	if err != nil {
-		rootCmd.PrintErrln("Error: Unable to access workspaces.")
-		os.Exit(1)
+	workspaces_path := home + "/.local/share/workspaces"
+	workspaces_list_file = workspaces_path + "/workspaces.csv"
+
+	// Check if workspace directory exists
+	_, err = os.Stat(workspaces_path)
+	if err != nil && os.IsNotExist(err) {
+		// The directory does not exit. Create the workspace directory path
+		if err = os.MkdirAll(workspaces_path, 0700); err != nil {
+			fmt.Println("Failed to create workspace list directory.")
+			os.Exit(1)
+		}
 	}
 
-	var buf []byte
-	n, err := logger.Read(buf)
-	if n == 0 || err != nil {
+	// Check if workspace list file exists
+	buf, err := os.ReadFile(workspaces_list_file)
+	if err != nil && os.IsNotExist(err){
+		// The file does not exist. Create it and close it.
+		fd, err := os.Create(workspaces_list_file)
+		if err != nil {
+			fmt.Println("Failed to create workspace list directory.")
+			os.Exit(1)
+		}
+		fd.Close()
 	}
 
-	cobra.OnFinalize(cleanup)
+	if len(buf) > 0 {
+		workspaces = strings.Split(string(buf), ",")
+	} else {
+		workspaces = nil
+	}
+
+	cobra.OnFinalize(finalize)
 }
 
-func cleanup() {
-	logger.Close()
+func finalize() {
+	err := os.WriteFile(workspaces_list_file, []byte(strings.Join(workspaces, ",")), 0700)
+	if err != nil {
+		fmt.Println("Error: Failed to add changes.")
+		os.Exit(1)
+	}
 }
