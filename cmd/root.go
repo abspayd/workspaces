@@ -76,9 +76,9 @@ func shellCommand(command string, args ...string) (string, error) {
 	return string(output), nil
 }
 
-func fzf(query string, item_map map[string]string) (string, error) {
-	shell, is_set := os.LookupEnv("SHELL")
-	if !is_set {
+func fzf(query string, items []string) (string, error) {
+	shell:= os.Getenv("SHELL")
+	if len(shell) == 0 {
 		shell = "sh"
 	}
 
@@ -94,8 +94,8 @@ func fzf(query string, item_map map[string]string) (string, error) {
 	cmd.Stderr = os.Stderr
 	in, _ := cmd.StdinPipe()
 	go func() {
-		for k := range item_map {
-			fmt.Fprintln(in, k)
+		for _, s := range items {
+			fmt.Fprintln(in, s)
 		}
 		in.Close()
 	}()
@@ -121,6 +121,15 @@ func tmuxAttach(session_name string) error {
 	return nil
 }
 
+func tmuxSessionExists(session_name string) (bool, error) {
+	filter := fmt.Sprintf("#{m:#{session_name},%s}", session_name)
+	match, err := shellCommand("tmux", "ls", "-f", filter)
+	if err != nil {
+		return false, err
+	}
+	return len(match) != 0, nil
+}
+
 func workspaceProjects() (map[string]string, error) {
 	projects := make(map[string]string)
 	for _, workspace := range workspaces {
@@ -137,14 +146,6 @@ func workspaceProjects() (map[string]string, error) {
 		}
 	}
 	return projects, nil
-}
-func tmuxSessionExists(session_name string) (bool, error) {
-	filter := fmt.Sprintf("#{m:#{session_name},%s}", session_name)
-	match, err := shellCommand("tmux", "ls", "-f", filter)
-	if err != nil {
-		return false, err
-	}
-	return  len(match) != 0, nil
 }
 
 func finalize() {
