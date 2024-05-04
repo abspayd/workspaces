@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
 
@@ -15,93 +14,60 @@ var (
 		Short: "Open a project within a workspace",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-
-			var projects map[string]string
-			projects = make(map[string]string)
-
-			for _, workspace := range workspaces {
-				entries, err := os.ReadDir(workspace)
-				if err != nil {
-					return err
-				}
-
-				// Add all non-hidden directories
-				for _, entry := range entries {
-					if entry.Type().IsDir() && entry.Name()[0] != '.' {
-						projects[entry.Name()] = workspace
-						// projects = append(projects, entry.Name())
-					}
-				}
-			}
-
-			shell, is_set := os.LookupEnv("SHELL")
-			if !is_set {
-				shell = "sh"
+			projects, err := workspaceProjects()
+			if err != nil {
+				return err
 			}
 
 			// == FZF ==
-			fzf_opts := []string{"+m"}
-			command := "fzf"
-			for _, opt := range fzf_opts {
-				command += " " + opt
+			fzf_query := ""
+			if len(args) > 0 {
+				fzf_query = args[0]
 			}
-			shellCmd := exec.Command(shell, "-c", command)
-			shellCmd.Stderr = os.Stderr
-			in, _ := shellCmd.StdinPipe()
-			go func() {
-				for k := range projects {
-					fmt.Fprintln(in, k)
-				}
-				in.Close()
-			}()
-			out, err := shellCmd.Output()
+			project_name, err := fzf(fzf_query, projects)
 			if err != nil {
-				exit := &exec.ExitError{}
-				if errors.As(err, &exit) {
+				exit_error := &exec.ExitError{}
+				if errors.As(err, &exit_error) {
+					// Silently return if exited
 					return nil
 				}
 				return err
 			}
 
-			// Remove new line
-			project_name := string(out[:len(out)-1])
-
 			// == Tmux ==
 			// Check if session exists
-			filter := fmt.Sprintf("#{m:#{session_name},%s}", project_name)
-			match, err := shellCommand("tmux", "ls", "-f", filter)
-			if len(match) == 0 {
+			session_exists, err := tmuxSessionExists(project_name)
+			if err != nil {
+				return err
+			}
+			if !session_exists {
 				// Create new session
 				project_path := projects[project_name] + "/" + project_name
 				_, err = shellCommand("tmux", "new-session", "-d", "-c", project_path, "-s", project_name)
 				if err != nil {
 					return err
 				}
-
-				fmt.Println("Created new session", project_name)
 			}
 
-			// Switch to new session
-			_, err = shellCommand("tmux", "switchc", "-t", project_name)
-			if err != nil {
-				return err
+			// Check if client is attached
+			is_attached, _ := os.LookupEnv("TMUX")
+			if len(is_attached) == 0 {
+				err = tmuxAttach(project_name)
+				if err != nil {
+					return err
+				}
+			} else {
+				// Switch to new session
+				_, err = shellCommand("tmux", "switchc", "-t", project_name)
+				if err != nil {
+					return err
+				}
 			}
 
 			return nil
 		},
 	}
 )
-
-// Execute a shell command with n arguments
-func shellCommand(command string, args ...string) (string, error) {
-	cmd := exec.Command(command, args...)
-	cmd.Stderr = os.Stderr
-	output, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	return string(output), nil
-}
 
 func init() {
 	rootCmd.AddCommand(openCmd)
