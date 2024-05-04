@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -49,7 +50,8 @@ var (
 			}
 
 			// Close the session
-			_, err = shellCommand("tmux", "kill-session", "-t", project_name)
+			shellCmd = exec.Command("tmux", "kill-session", "-t", project_name)
+			err = shellCmd.Run()
 			if err != nil {
 				return err
 			}

@@ -56,7 +56,6 @@ var (
 					args = append(args, "-d")
 				}
 				shellCmd := exec.Command("tmux", args...)
-				shellCmd.Stderr = os.Stderr
 				err = shellCmd.Run()
 				if err != nil {
 					return err
@@ -71,7 +70,8 @@ var (
 				}
 			} else {
 				// Switch to new session
-				_, err = shellCommand("tmux", "switch-client", "-t", project_name)
+				shellCmd := exec.Command("tmux", "switch-client", "-t", project_name)
+				err = shellCmd.Run()
 				if err != nil {
 					return err
 				}

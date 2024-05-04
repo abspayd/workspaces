@@ -65,17 +65,6 @@ func init() {
 	cobra.OnFinalize(finalize)
 }
 
-// Execute a shell command with n arguments
-func shellCommand(command string, args ...string) (string, error) {
-	cmd := exec.Command(command, args...)
-	cmd.Stderr = os.Stderr
-	output, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	return string(output), nil
-}
-
 func fzf(query string, items []string) (string, error) {
 	shell:= os.Getenv("SHELL")
 	if len(shell) == 0 {
@@ -123,7 +112,9 @@ func tmuxAttach(session_name string) error {
 
 func tmuxSessionExists(session_name string) (bool, error) {
 	filter := fmt.Sprintf("#{m:#{session_name},%s}", session_name)
-	match, err := shellCommand("tmux", "ls", "-f", filter)
+	cmd := exec.Command("tmux", "ls", "-f", filter)
+	match, err := cmd.Output()
+
 	if err != nil {
 		return false, err
 	}
