@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"errors"
-	"os"
 	"os/exec"
 	"strings"
 
