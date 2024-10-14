@@ -1,6 +1,6 @@
 package main
 
-import "abspayd/workspaces/cmd"
+import "github.com/abspayd/workspaces/cmd"
 
 func main() {
 	cmd.Execute()

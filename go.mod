@@ -1,4 +1,4 @@
-module abspayd/workspaces
+module github.com/abspayd/workspaces
 
 go 1.22.1
 
