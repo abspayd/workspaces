@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -40,6 +41,9 @@ var (
 				}
 				return err
 			}
+
+			// replace '.' with '_'
+			project_name = strings.ReplaceAll(project_name, ".", "_")
 
 			// == Tmux ==
 			// Check if session exists
