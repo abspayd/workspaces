@@ -20,10 +20,10 @@ var (
 				return err
 			}
 
-			// Find the index of the path
-			for i := 0; i < len(workspaces); i++ {
-				if workspaces[i] == path {
-					workspaces = append(workspaces[:i], workspaces[i+1:]...)
+			for i, w := range workspaces.Workspaces {
+				if w.Path == path {
+					workspaces.Workspaces = append(workspaces.Workspaces[:i], workspaces.Workspaces[i+1:]...)
+					break
 				}
 			}
 

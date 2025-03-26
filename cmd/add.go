@@ -28,6 +28,8 @@ var (
 
 			workspaces = append(workspaces, path)
 
+			Logger.Println("Added new workspace path:", path)
+
 			return nil
 		},
 	}

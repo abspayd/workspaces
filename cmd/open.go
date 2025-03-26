@@ -18,6 +18,7 @@ var (
 		RunE: func(cmd *cobra.Command, args []string) error {
 			projects, err := workspaceProjects()
 			if err != nil {
+				Logger.Println("Error: Failed to get workspace projects:", err)
 				return err
 			}
 
@@ -66,6 +67,8 @@ var (
 				}
 			}
 
+			Logger.Println("Opened project:", project_name)
+
 			// Check if client is attached
 			if !is_attached {
 				err = tmuxAttach(project_title)
@@ -77,6 +80,7 @@ var (
 				shellCmd := exec.Command("tmux", "switch-client", "-t", project_title)
 				err = shellCmd.Run()
 				if err != nil {
+					Logger.Println("Error: Unable to switch to new session:", err)
 					return err
 				}
 			}

@@ -10,9 +10,9 @@ import (
 
 var (
 	closeCmd = &cobra.Command{
-		Use:   "close [name]",
-		Short: "Close a project session",
-		Args:  cobra.MaximumNArgs(1),
+		Use:                   "close [name]",
+		Short:                 "Close a project session",
+		Args:                  cobra.MaximumNArgs(1),
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			shellCmd := exec.Command("tmux", "list-sessions", "-F", "#{session_name}")
@@ -54,6 +54,8 @@ var (
 			if err != nil {
 				return err
 			}
+
+			Logger.Println("Closed session:", project_name)
 
 			return nil
 		},
