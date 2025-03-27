@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -43,11 +44,18 @@ func Execute() error {
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&workspaces_path, "path", "p", "~/.local/share/workspaces", "Path to the workspaces directory")
+
+	fmt.Println(workspaces_path)
+	os.Exit(1)
+
 	// TODO: properly handle directories with '~' by resolving the user home path
-	workspaces_path, err := filepath.Abs(workspaces_path)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+	if strings.HasPrefix(workspaces_path, "~") {
+		home_dir, err := os.UserHomeDir()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		workspaces_path = filepath.Join(home_dir, workspaces_path[1:])
 	}
 
 	fmt.Println("TODO: fix project path resolution")
@@ -57,7 +65,7 @@ func init() {
 	workspaces_file = filepath.Join(workspaces_path, "/workspaces.json")
 
 	// Check if workspace directory exists
-	_, err = os.Stat(workspaces_path)
+	_, err := os.Stat(workspaces_path)
 	if err != nil && os.IsNotExist(err) {
 		// The directory does not exit. Create the workspace directory path
 		if err = os.MkdirAll(workspaces_path, 0700); err != nil {
