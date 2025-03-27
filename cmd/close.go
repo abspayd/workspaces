@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"log"
 	"os/exec"
 	"strings"
 
@@ -56,7 +57,7 @@ var (
 				return err
 			}
 
-			logger.Println("Closed session:", project_name)
+			log.Println("Closed session:", project_name)
 
 			return nil
 		},

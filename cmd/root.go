@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -12,8 +11,6 @@ import (
 )
 
 var (
-	logger *log.Logger
-
 	workspace_layout WorkspaceLayout
 
 	workspaces_path string
@@ -23,6 +20,47 @@ var (
 		Use:   "workspaces",
 		Short: "Quickly access your most used projects with tmux",
 		Long:  `Workspaces allows you to store your project locations and quickly create named tmux sessions for them.`,
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			if strings.HasPrefix(workspaces_path, "~") {
+				home_dir, err := os.UserHomeDir()
+				if err != nil {
+					log.Fatalln(err)
+				}
+				workspaces_path = filepath.Join(home_dir, workspaces_path[1:])
+			}
+
+			workspaces_path, err := filepath.Abs(workspaces_path)
+			if err != nil {
+				log.Fatalln(err)
+			}
+
+			workspaces_file = filepath.Join(workspaces_path, "/workspaces.json")
+
+			// Check if workspace directory exists
+			_, err = os.Stat(workspaces_path)
+			if err != nil && os.IsNotExist(err) {
+				// The directory does not exit. Create the workspace directory path
+				if err = os.MkdirAll(workspaces_path, 0700); err != nil {
+					log.Fatalln("Failed to create workspace list directory.")
+				}
+			}
+
+			buf, err := os.ReadFile(workspaces_file)
+			if err != nil && os.IsNotExist(err) {
+				fd, err := os.Create(workspaces_file)
+				if err != nil {
+					log.Fatalln("Failed to read workspaces.json")
+				}
+				fd.Close()
+			}
+
+			if len(buf) > 0 {
+				err := json.Unmarshal(buf, &workspace_layout)
+				if err != nil {
+					log.Fatalln("Failed to unmarshal workspaces.json")
+				}
+			}
+		},
 	}
 )
 
@@ -32,7 +70,6 @@ type (
 	}
 
 	Workspace struct {
-		// Name    string `json:"name"`
 		Path    string `json:"path"`
 		StowDir bool   `json:"stow_dir,omitempty"`
 	}
@@ -44,60 +81,6 @@ func Execute() error {
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&workspaces_path, "path", "p", "~/.local/share/workspaces", "Path to the workspaces directory")
-
-	fmt.Println(workspaces_path)
-	os.Exit(1)
-
-	// TODO: properly handle directories with '~' by resolving the user home path
-	if strings.HasPrefix(workspaces_path, "~") {
-		home_dir, err := os.UserHomeDir()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		workspaces_path = filepath.Join(home_dir, workspaces_path[1:])
-	}
-
-	fmt.Println("TODO: fix project path resolution")
-	fmt.Println(workspaces_path)
-	os.Exit(1)
-
-	workspaces_file = filepath.Join(workspaces_path, "/workspaces.json")
-
-	// Check if workspace directory exists
-	_, err := os.Stat(workspaces_path)
-	if err != nil && os.IsNotExist(err) {
-		// The directory does not exit. Create the workspace directory path
-		if err = os.MkdirAll(workspaces_path, 0700); err != nil {
-			fmt.Println("Failed to create workspace list directory.")
-			os.Exit(1)
-		}
-	}
-
-	// Logging
-	log_path := filepath.Join(workspaces_path, "workspaces.log")
-	log_file, err := os.OpenFile(log_path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
-	if err != nil {
-		fmt.Println("Failed to create log file.")
-		os.Exit(1)
-	}
-	logger = log.New(log_file, "", log.LstdFlags)
-
-	buf, err := os.ReadFile(workspaces_file)
-	if err != nil && os.IsNotExist(err) {
-		fd, err := os.Create(workspaces_file)
-		if err != nil {
-			logger.Fatalln("Failed to read workspaces.json")
-		}
-		fd.Close()
-	}
-
-	if len(buf) > 0 {
-		err := json.Unmarshal(buf, &workspace_layout)
-		if err != nil {
-			logger.Fatalln("Failed to unmarshal workspaces.json")
-		}
-	}
 
 	cobra.OnFinalize(finalize)
 }
@@ -134,32 +117,16 @@ func projectLinks() (map[string]string, error) {
 	return projects, nil
 }
 
-// func workspaceProjects() (map[string]string, error) {
-// 	projects := make(map[string]string)
-// 	for _, workspace := range workspace_layout.Workspaces {
-// 		subdirs, err := os.ReadDir(workspace.Path)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-//
-// 		// Add all non-hidden directories
-// 		for _, subdir := range subdirs {
-// 			if subdir.Type().IsDir() && subdir.Name()[0] != '.' {
-// 				projects[subdir.Name()] = workspace.Path
-// 			}
-// 		}
-// 	}
-// 	return projects, nil
-// }
-
 func finalize() {
 	str, err := json.Marshal(workspace_layout)
 	if err != nil {
-		logger.Fatalln("Error: Failed to marshal workspaces.")
+		log.Fatalln("Error: Failed to marshal workspaces.")
 	}
 
-	err = os.WriteFile(workspaces_file, []byte(str), 0700)
-	if err != nil {
-		logger.Fatalln("Error: Failed to add changes.")
+	if len(str) > 0 {
+		err = os.WriteFile(workspaces_file, []byte(str), 0700)
+		if err != nil {
+			log.Fatalln("Error: Failed to add changes.")
+		}
 	}
 }

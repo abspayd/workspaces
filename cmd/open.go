@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -19,7 +20,7 @@ var (
 		RunE: func(cmd *cobra.Command, args []string) error {
 			projects, err := projectLinks()
 			if err != nil {
-				logger.Println("Error: Failed to get workspace projects:", err)
+				log.Println("Error: Failed to get workspace projects:", err)
 				return err
 			}
 
@@ -68,7 +69,7 @@ var (
 				}
 			}
 
-			logger.Println("Opened project:", project_name)
+			log.Println("Opened project:", project_name)
 
 			// Check if client is attached
 			if !is_attached {
@@ -81,7 +82,7 @@ var (
 				shellCmd := exec.Command("tmux", "switch-client", "-t", project_title)
 				err = shellCmd.Run()
 				if err != nil {
-					logger.Println("Error: Unable to switch to new session:", err)
+					log.Println("Error: Unable to switch to new session:", err)
 					return err
 				}
 			}
