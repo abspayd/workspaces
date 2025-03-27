@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/abspayd/workspaces/internal"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +29,7 @@ var (
 			if len(args) > 0 {
 				fzf_query = args[0]
 			}
-			project_name, err := fzf(fzf_query, sessions)
+			project_name, err := internal.Fzf(fzf_query, sessions)
 			if err != nil {
 				exit_error := &exec.ExitError{}
 				if errors.As(err, &exit_error) {
@@ -39,7 +40,7 @@ var (
 
 			// == Tmux ==
 			// Check if session exists
-			session_exists, err := tmuxSessionExists(project_name)
+			session_exists, err := internal.TmuxSessionExists(project_name)
 			if err != nil {
 				return err
 			}
@@ -55,7 +56,7 @@ var (
 				return err
 			}
 
-			Logger.Println("Closed session:", project_name)
+			logger.Println("Closed session:", project_name)
 
 			return nil
 		},

@@ -16,8 +16,8 @@ var (
 				return err
 			}
 
-			for _, v := range workspaces {
-				fmt.Println(v)
+			for _, workspace := range workspace_layout.Workspaces {
+				fmt.Println(workspace.Path)
 			}
 
 			return nil

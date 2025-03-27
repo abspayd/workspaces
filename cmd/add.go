@@ -19,16 +19,18 @@ var (
 				return err
 			}
 
-			for i := 0; i < len(workspaces); i++ {
-				if workspaces[i] == path {
-					// This path already exists; do nothing
+			for _, workspace := range workspace_layout.Workspaces {
+				if workspace.Path == path {
+					cmd.Printf("Workspace \"%s\" already exists.\n", path)
 					return nil
 				}
 			}
 
-			workspaces = append(workspaces, path)
-
-			Logger.Println("Added new workspace path:", path)
+			workspace := Workspace{
+				Path:    path,
+				StowDir: false,
+			}
+			workspace_layout.Workspaces = append(workspace_layout.Workspaces, workspace)
 
 			return nil
 		},

@@ -16,5 +16,5 @@ runs without a user-facing shell
         to the project global
         - E.g.:
             - ~/.dotfiles/nvim -> ~/.dotfiles/nvim/.config/nvim -- follows GNU symlink path to source
-            - ~/.dotfiles/zsh -> ~/.dotfiles/.zsh/              -- there is no
+            - ~/.dotfiles/zsh -> ~/.dotfiles/.zsh/              -- there is no depth to this project, so just link to the source
         

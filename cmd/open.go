@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/abspayd/workspaces/internal"
 	"github.com/spf13/cobra"
 )
 
@@ -16,9 +17,9 @@ var (
 		Args:                  cobra.MaximumNArgs(1),
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			projects, err := workspaceProjects()
+			projects, err := projectLinks()
 			if err != nil {
-				Logger.Println("Error: Failed to get workspace projects:", err)
+				logger.Println("Error: Failed to get workspace projects:", err)
 				return err
 			}
 
@@ -33,7 +34,7 @@ var (
 				project_names = append(project_names, k)
 			}
 
-			project_name, err := fzf(fzf_query, project_names)
+			project_name, err := internal.Fzf(fzf_query, project_names)
 			if err != nil {
 				exit_error := &exec.ExitError{}
 				if errors.As(err, &exit_error) {
@@ -49,7 +50,7 @@ var (
 			// == Tmux ==
 			// Check if session exists
 			is_attached := len(os.Getenv("TMUX")) > 0
-			session_exists, err := tmuxSessionExists(project_title)
+			session_exists, err := internal.TmuxSessionExists(project_title)
 			if err != nil {
 				return err
 			}
@@ -67,11 +68,11 @@ var (
 				}
 			}
 
-			Logger.Println("Opened project:", project_name)
+			logger.Println("Opened project:", project_name)
 
 			// Check if client is attached
 			if !is_attached {
-				err = tmuxAttach(project_title)
+				err = internal.TmuxAttachSession(project_title)
 				if err != nil {
 					return err
 				}
@@ -80,7 +81,7 @@ var (
 				shellCmd := exec.Command("tmux", "switch-client", "-t", project_title)
 				err = shellCmd.Run()
 				if err != nil {
-					Logger.Println("Error: Unable to switch to new session:", err)
+					logger.Println("Error: Unable to switch to new session:", err)
 					return err
 				}
 			}

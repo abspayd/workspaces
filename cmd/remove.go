@@ -20,9 +20,9 @@ var (
 				return err
 			}
 
-			for i, w := range workspaces.Workspaces {
+			for i, w := range workspace_layout.Workspaces {
 				if w.Path == path {
-					workspaces.Workspaces = append(workspaces.Workspaces[:i], workspaces.Workspaces[i+1:]...)
+					workspace_layout.Workspaces = append(workspace_layout.Workspaces[:i], workspace_layout.Workspaces[i+1:]...)
 					break
 				}
 			}
