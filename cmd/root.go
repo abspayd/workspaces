@@ -10,8 +10,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type (
+	Workspaces struct {
+		Paths map[string]Workspace `json:"paths"`
+	}
+
+	Workspace struct {
+		StowDir bool `json:"stow_dir,omitempty"`
+	}
+)
+
 var (
-	workspace_layout WorkspaceLayout
+	workspaces       Workspaces
+	workspaces_dirty bool
 
 	workspaces_path string
 	workspaces_file string
@@ -49,29 +60,24 @@ var (
 			if err != nil && os.IsNotExist(err) {
 				fd, err := os.Create(workspaces_file)
 				if err != nil {
-					log.Fatalln("Failed to read workspaces.json")
+					log.Fatalln("Failed to create workspaces.json")
 				}
 				fd.Close()
 			}
 
 			if len(buf) > 0 {
-				err := json.Unmarshal(buf, &workspace_layout)
+				err := json.Unmarshal(buf, &workspaces)
 				if err != nil {
 					log.Fatalln("Failed to unmarshal workspaces.json")
 				}
 			}
+
+			if workspaces.Paths == nil {
+				workspaces.Paths = make(map[string]Workspace)
+			}
+
+			workspaces_dirty = false
 		},
-	}
-)
-
-type (
-	WorkspaceLayout struct {
-		Workspaces []Workspace `json:"workspaces"`
-	}
-
-	Workspace struct {
-		Path    string `json:"path"`
-		StowDir bool   `json:"stow_dir,omitempty"`
 	}
 )
 
@@ -81,15 +87,14 @@ func Execute() error {
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&workspaces_path, "path", "p", "~/.local/share/workspaces", "Path to the workspaces directory")
-
 	cobra.OnFinalize(finalize)
 }
 
 func projectLinks() (map[string]string, error) {
-	workspaces := workspace_layout.Workspaces
+	workspaces := workspaces.Paths
 	projects := make(map[string]string)
-	for _, workspace := range workspaces {
-		dir_entries, err := os.ReadDir(workspace.Path)
+	for workspace, _ := range workspaces {
+		dir_entries, err := os.ReadDir(workspace)
 		if err != nil {
 			return nil, err
 		}
@@ -98,16 +103,16 @@ func projectLinks() (map[string]string, error) {
 				continue
 			}
 
-			projects[entry.Name()] = filepath.Join(workspace.Path, entry.Name())
+			projects[entry.Name()] = filepath.Join(workspace, entry.Name())
 
-			if workspace.StowDir {
-				stow_package_entries, err := os.ReadDir(filepath.Join(workspace.Path, entry.Name()))
+			if workspaces[workspace].StowDir {
+				stow_package_entries, err := os.ReadDir(filepath.Join(workspace, entry.Name()))
 				if err != nil {
 					return nil, err
 				}
 				for _, stow_entry := range stow_package_entries {
 					if stow_entry.Type().IsDir() && stow_entry.Name() == ".config" {
-						projects[entry.Name()] = filepath.Join(workspace.Path, entry.Name(), ".config", entry.Name())
+						projects[entry.Name()] = filepath.Join(workspace, entry.Name(), ".config", entry.Name())
 						break
 					}
 				}
@@ -118,12 +123,11 @@ func projectLinks() (map[string]string, error) {
 }
 
 func finalize() {
-	str, err := json.Marshal(workspace_layout)
-	if err != nil {
-		log.Fatalln("Error: Failed to marshal workspaces.")
-	}
-
-	if len(str) > 0 {
+	if workspaces_dirty {
+		str, err := json.Marshal(workspaces)
+		if err != nil {
+			log.Fatalln("Error: Failed to marshal workspaces.")
+		}
 		err = os.WriteFile(workspaces_file, []byte(str), 0700)
 		if err != nil {
 			log.Fatalln("Error: Failed to add changes.")

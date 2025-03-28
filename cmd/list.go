@@ -16,8 +16,12 @@ var (
 				return err
 			}
 
-			for _, workspace := range workspace_layout.Workspaces {
-				fmt.Println(workspace.Path)
+			for workspace := range workspaces.Paths {
+				if workspaces.Paths[workspace].StowDir {
+					fmt.Println(workspace, "-", "stow")
+				} else {
+					fmt.Println(workspace)
+				}
 			}
 
 			return nil

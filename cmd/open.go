@@ -13,10 +13,9 @@ import (
 
 var (
 	openCmd = &cobra.Command{
-		Use:                   "open [name]",
-		Short:                 "Open a project within a workspace",
-		Args:                  cobra.MaximumNArgs(1),
-		DisableFlagsInUseLine: true,
+		Use:   "open [name]",
+		Short: "Open a project within a workspace",
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			projects, err := projectLinks()
 			if err != nil {
