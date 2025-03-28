@@ -56,8 +56,7 @@ var (
 			}
 			if !session_exists {
 				// Create new session
-				project_path := projects[project_name] + "/" + project_name
-				args := []string{"new-session", "-s", project_title, "-c", project_path}
+				args := []string{"new-session", "-s", project_title, "-c", projects[project_name]}
 				if is_attached {
 					args = append(args, "-d")
 				}
