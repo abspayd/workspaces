@@ -44,7 +44,7 @@ var (
 				return err
 			}
 
-			// replace '.' with '_'
+			// Make sure the project name is valid for a tmux session
 			project_title := strings.ReplaceAll(project_name, ".", "_")
 
 			// == Tmux ==
